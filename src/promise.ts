@@ -187,4 +187,13 @@ export class MyPromise<T> {
             }
         });
     }
+
+    static race<T>(myPromises: readonly MyPromise<T>[]) {
+        return new MyPromise<T>((resolve, reject) => {
+            for(const promise of myPromises) {
+                promise.then(result => resolve(result));
+                promise.catch(error => reject(error));
+            }
+        });
+    }
 }

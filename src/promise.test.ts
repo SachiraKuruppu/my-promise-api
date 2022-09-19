@@ -195,3 +195,43 @@ describe("MyPromise.any", () => {
         });
     });
 });
+
+describe("MyPromise.race", () => {
+    it("resolves as soon as one of the input promises resolves", async done => {
+        const promise1 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo1");
+        });
+        const promise2 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar1"));
+        });
+        const promise3 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo2");
+        });
+
+        const combinedPromise = MyPromise.race([promise1, promise2, promise3]);
+
+        combinedPromise.then(result => {
+            expect(result).toBe("foo1");
+            done();
+        });
+    });
+
+    it("rejects as soon as one of the input promises rejects", async done => {
+        const promise1 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar1"));
+        });
+        const promise2 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo1");
+        });
+        const promise3 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo2");
+        });
+
+        const combinedPromise = MyPromise.race([promise1, promise2, promise3]);
+
+        combinedPromise.catch(error => {
+            expect(error.message).toBe("bar1");
+            done();
+        });
+    });
+});
