@@ -1,4 +1,4 @@
-import { MyPromise } from "./promise";
+import { MyPromise, AggregateError } from "./promise";
 
 describe("Promise", () => {
     it("has a then method with resolve and reject callbacks", async done => {
@@ -147,6 +147,50 @@ describe("MyPromise.allSettled", () => {
                 value: "foo"
             });
 
+            done();
+        });
+    });
+});
+
+describe("MyPromise.any", () => {
+    it("should resolve when one of the input promises resolve", async done => {
+        const promise1 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo1");
+        });
+        const promise2 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar1"));
+        });
+        const promise3 = new MyPromise<string>((resolve, _reject) => {
+            resolve("foo2");
+        });
+
+        const combinedPromise = MyPromise.any([promise1, promise2, promise3]);
+
+        combinedPromise.then(result => {
+            expect(result).toBe("foo1");
+            done();
+        });
+    });
+
+    it("should reject if all the input promises reject", async done => {
+        const promise1 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar1"));
+        });
+        const promise2 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar2"));
+        });
+        const promise3 = new MyPromise<string>((_resolve, reject) => {
+            reject(new Error("bar3"));
+        });
+
+        const combinedPromise = MyPromise.any([promise1, promise2, promise3]);
+
+        combinedPromise.catch(error => {
+            expect((error as AggregateError).errors).toStrictEqual([
+                Error("bar1"),
+                Error("bar2"),
+                Error("bar3"),
+            ]);
             done();
         });
     });

@@ -19,6 +19,15 @@ enum PromiseState {
     REJECTED,
 }
 
+export class AggregateError extends Error {
+    errors: Error[];
+
+    constructor(errors: Error[]) {
+        super("All Promises rejected");
+        this.errors = errors;
+    }
+}
+
 export class MyPromise<T> {
     private resolvedResult: T;
     private error: Error;
@@ -49,7 +58,7 @@ export class MyPromise<T> {
 
     private onReject(error: Error) {
         if (this.promiseState !== PromiseState.PENDING) return;
-        
+
         this.error = error;
         this.promiseState = PromiseState.REJECTED;
 
@@ -153,6 +162,26 @@ export class MyPromise<T> {
 
                     if(statuses.length === myPromises.length) {
                         resolve(statuses);
+                    }
+                });
+            }
+        });
+    }
+
+    static any<T>(myPromises: readonly MyPromise<T>[]) {
+        const errors: Error[] = [];
+
+        return new MyPromise<T>((resolve, reject) => {
+            for(const promise of myPromises) {
+                promise.then(result => {
+                    resolve(result);
+                });
+
+                promise.catch(error => {
+                    errors.push(error);
+
+                    if(errors.length === myPromises.length) {
+                        reject(new AggregateError(errors));
                     }
                 });
             }
